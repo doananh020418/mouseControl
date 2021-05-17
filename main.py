@@ -22,13 +22,15 @@ if cap.isOpened():
             fps = 1 / (ctime - ptime)
             ptime = ctime
             # get hands landmark
-            detector = HTM.handDetector(detectionCon=0.7, trackCon=0.7)
+            detector = HTM.handDetector(detectionCon=0.5, trackCon=0.7)
             img = detector.findHands(img)
             pos = detector.findPosition(img)
             # get camera size
             cw, ch, _ = img.shape
             # get screen size
             sw, sh = pyautogui.size()
+
+            press = True
 
             if len(pos) != 0:
                 # get finger postiton in camera coordinate
@@ -51,6 +53,14 @@ if cap.isOpened():
 
                 Y_left = np.interp(Y_left, [0 + 100, 600], [0, sh])
                 X_left = np.interp(X_left, [0 + 100, 1000], [0, sw])
+                if X_left < 100 and press:
+                    pyautogui.press("left")
+                    press = False
+                if X_left > 1180 and press:
+                    pyautogui.press("right")
+                    press = False
+                if X_left > 100 and X_left < 1180:
+                    press = True
                 # move cursor 
                 pyautogui.moveTo(X_left, Y_left)
                 # click condition
@@ -58,11 +68,16 @@ if cap.isOpened():
                     pyautogui.leftClick()
                 # print(f'R:{X_left, Y_left}')
                 # print(f'L:{X_left, Y_left}')
-                print(sw, sh)
+                # print(sw, sh)
             start = (100, 100)
             # end = (400, cw - cw / 10)
             end = (1000, 600)
-            cv2.rectangle(img, start, end, (0, 0, 255), 1)
+
+            print(int(fps))
+            cv2.line(img, (100, 0), (100, 720), (255, 0, 0), 1)
+            cv2.line(img, (1180, 0), (1180, 720), (255, 0, 0), 1)
+
+            # cv2.rectangle(img, start, end, (0, 0, 255), 1)
             cv2.putText(img, f'FPS: {str(int(fps))}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 1)
             cv2.imshow('cam', img)
             cv2.waitKey(1)
