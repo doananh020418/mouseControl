@@ -22,7 +22,7 @@ if cap.isOpened():
             fps = 1 / (ctime - ptime)
             ptime = ctime
             # get hands landmark
-            detector = HTM.handDetector(detectionCon=0.5, trackCon=0.7)
+            detector = HTM.handDetector(detectionCon=0.7, trackCon=0.5)
             img = detector.findHands(img)
             pos = detector.findPosition(img)
             # get camera size
@@ -46,21 +46,25 @@ if cap.isOpened():
 
                 # mapping tip finger from camera to creen coordinate
 
-                if Y_left < 100:
-                    Y_left = 100
+                if X_right >1000:
+                    X_right = 1000
                 if X_left < 100:
-                    X_left = 100;
+                    X_left = 100
 
-                Y_left = np.interp(Y_left, [0 + 100, 600], [0, sh])
-                X_left = np.interp(X_left, [0 + 100, 1000], [0, sw])
                 if X_left < 100 and press:
                     pyautogui.press("left")
+                    print('left')
                     press = False
                 if X_left > 1180 and press:
                     pyautogui.press("right")
+                    print('right')
                     press = False
                 if X_left > 100 and X_left < 1180:
                     press = True
+
+                Y_left = np.interp(Y_left, [0 + 100, 600], [0, sh])
+                X_left = np.interp(X_left, [0 + 100, 1000], [0, sw])
+
                 # move cursor 
                 pyautogui.moveTo(X_left, Y_left)
                 # click condition
