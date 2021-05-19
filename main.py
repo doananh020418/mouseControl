@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 import pyautogui
 
+import win32api
+import win32con
 import HandTrackingModule as HTM
 
 cap = cv2.VideoCapture(0)
@@ -13,6 +15,12 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
 ptime = 0
 press = True
+from pykeyboard import PyKeyboard
+k = PyKeyboard()
+def click(x,y):
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+
 if cap.isOpened():
     while True:
         success, img = cap.read()
@@ -45,11 +53,11 @@ if cap.isOpened():
                 # mapping tip finger from camera to creen coordinate
 
                 if X_left < 500 and press:
-                    pyautogui.press("right")
+                    k.tap_key(k.right_key)
                     print('right')
                     press = False
                 if X_left > 780 and press:
-                    pyautogui.press("left")
+                    k.tap_key(k.left_key)
                     print('left')
                     press = False
                 if X_left > 500 and X_left < 780:
@@ -64,16 +72,18 @@ if cap.isOpened():
                 X_left = np.interp(X_left, [0 + 100, 1000], [0, sw])
 
                 # move cursor
-                X_cursor = np.floor(X_left / 10) * 10
-                Y_cursor = np.floor(Y_left / 10) * 10
-                #pyautogui.moveTo(int(X_cursor), int(Y_cursor))
+                # X_cursor = int(np.floor(int(X_left) / 10) * 10)
+                # Y_cursor = int(np.floor(int(Y_left) / 10) * 10)
+                X_cursor = int(X_left)
+                Y_cursor = int(Y_left)
+                win32api.SetCursorPos((X_cursor, Y_cursor))
 
                 # click condition
                 if (right_distance < base_distance):
-                    pyautogui.leftClick()
+                    click(int(X_cursor),int(Y_cursor))
                 # print(f'R:{X_left, Y_left}')
                 # print(f'L:{X_left, Y_left}')
-                # print(sw, sh)
+                print(sw, sh)
             start = (100, 100)
             # end = (400, cw - cw / 10)
             end = (1000, 900)
