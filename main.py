@@ -10,11 +10,8 @@ from pykeyboard import PyKeyboard
 import HandTrackingModule as HTM
 
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-
-
-
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 960)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 540)
 
 k = PyKeyboard()
 
@@ -24,28 +21,31 @@ def click(x, y):
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
 
 def showCam(img,fps):
-    cv2.line(img, (500, 0), (500, 1080), (255, 0, 0), 1)
-    cv2.line(img, (780, 0), (780, 1080), (255, 0, 0), 1)
-    start = (100, 100)
-    end = (1000, 900)
+    # cv2.line(img, (100, 100), (100, 900), (255, 0, 0), 1)
+    # cv2.line(img, (700, 100), (700, 900), (255, 0, 0), 1)
+    start = (80, 80)
+    end = (880, 460)
     cv2.rectangle(img, start, end, (0, 0, 255), 1)
     cv2.putText(img, f'FPS: {str(int(fps))}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 1)
     cv2.imshow('cam', img)
     cv2.waitKey(1)
 
 def pressArrowButton(X_left,press):
-    if X_left < 500 and press:
+    if X_left < 80 and press:
         k.tap_key(k.right_key)
         print('right')
         press = False
-    if X_left > 780 and press:
+    if X_left > 880 and press:
         k.tap_key(k.left_key)
         print('left')
         press = False
-    if X_left > 500 and X_left < 780:
+    if X_left > 80 and X_left < 880:
         press = True
     return press
 def main():
+    plocX, plocY = 0, 0
+    clocX, clocY = 0, 0
+    smoothening = 5
     if cap.isOpened():
         ptime = 0
         press = True
@@ -53,6 +53,7 @@ def main():
             success, img = cap.read()
             if success:
                 img = cv2.flip(img, 1)
+                print(img.shape)
                 # caculate FPS
                 ctime = time.time()
                 fps = 1 / (ctime - ptime)
@@ -81,21 +82,29 @@ def main():
 
                     press = pressArrowButton(X_left,press)
                     # normalization
-                    if X_right > 1000:
-                        X_right = 1000
-                    if X_left < 100:
-                        X_left = 100
+                    if X_left > 880:
+                        X_left = 880
+                    if X_left < 80:
+                        X_left = 80
+                    if Y_left > 460:
+                        Y_left = 460
+                    if Y_left < 80:
+                        Y_left = 80
+
                     # mapping tip finger from camera to creen coordinate
-                    Y_left = np.interp(Y_left, [0 + 100, 900], [0, sh])
-                    X_left = np.interp(X_left, [0 + 100, 1000], [0, sw])
+                    Y_left = np.interp(Y_left, [0 + 100, 460], [0, sh])
+                    X_left = np.interp(X_left, [0 + 100, 880], [0, sw])
+
+                    clocX = plocX + (X_left - plocX) / smoothening
+                    clocY = plocY + (Y_left - plocY) / smoothening
 
                     # move cursor
                     # X_cursor = int(np.floor(int(X_left) / 10) * 10)
                     # Y_cursor = int(np.floor(int(Y_left) / 10) * 10)
-                    X_cursor = int(X_left)
-                    Y_cursor = int(Y_left)
+                    X_cursor = int(clocX)
+                    Y_cursor = int(clocY)
                     win32api.SetCursorPos((X_cursor, Y_cursor))
-
+                    plocX, plocY = X_cursor, Y_cursor
                     # click condition
                     if (right_distance < base_distance):
                         click(int(X_cursor), int(Y_cursor))
@@ -104,6 +113,6 @@ def main():
                     # print(sw, sh)
 
                 print(int(fps))
-                #showCam(img,fps)
+                showCam(img,fps)
 if __name__ == '__main__':
     main()
