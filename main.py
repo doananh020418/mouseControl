@@ -9,9 +9,10 @@ import HandTrackingModule as HTM
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
 ptime = 0
+press = True
 if cap.isOpened():
     while True:
         success, img = cap.read()
@@ -22,21 +23,18 @@ if cap.isOpened():
             fps = 1 / (ctime - ptime)
             ptime = ctime
             # get hands landmark
-            detector = HTM.handDetector(detectionCon=0.7, trackCon=0.5)
-            img = detector.findHands(img)
-            pos = detector.findPosition(img)
+            detector = HTM.handDetector(detectionCon=0.7, trackCon=0.7)
+            img, pos = detector.findHands(img)
             # get camera size
             cw, ch, _ = img.shape
             # get screen size
             sw, sh = pyautogui.size()
 
-            press = True
-
             if len(pos) != 0:
                 # get finger postiton in camera coordinate
                 i, X_right, Y_right = pos[12]
                 i, X_left, Y_left = pos[8]
-                i, X_mid, Y_mid = pos[13]
+                i, X_mid, Y_mid = pos[6]
                 i, X_base, Y_base = pos[0]
 
                 # caculate distance between postiton
@@ -46,27 +44,30 @@ if cap.isOpened():
 
                 # mapping tip finger from camera to creen coordinate
 
-                if X_right >1000:
+                if X_left < 500 and press:
+                    pyautogui.press("right")
+                    print('right')
+                    press = False
+                if X_left > 780 and press:
+                    pyautogui.press("left")
+                    print('left')
+                    press = False
+                if X_left > 500 and X_left < 780:
+                    press = True
+
+                if X_right > 1000:
                     X_right = 1000
                 if X_left < 100:
                     X_left = 100
 
-                if X_left < 100 and press:
-                    pyautogui.press("left")
-                    print('left')
-                    press = False
-                if X_left > 1180 and press:
-                    pyautogui.press("right")
-                    print('right')
-                    press = False
-                if X_left > 100 and X_left < 1180:
-                    press = True
-
-                Y_left = np.interp(Y_left, [0 + 100, 600], [0, sh])
+                Y_left = np.interp(Y_left, [0 + 100, 900], [0, sh])
                 X_left = np.interp(X_left, [0 + 100, 1000], [0, sw])
 
-                # move cursor 
-                pyautogui.moveTo(X_left, Y_left)
+                # move cursor
+                X_cursor = np.floor(X_left / 10) * 10
+                Y_cursor = np.floor(Y_left / 10) * 10
+                #pyautogui.moveTo(int(X_cursor), int(Y_cursor))
+
                 # click condition
                 if (right_distance < base_distance):
                     pyautogui.leftClick()
@@ -75,13 +76,13 @@ if cap.isOpened():
                 # print(sw, sh)
             start = (100, 100)
             # end = (400, cw - cw / 10)
-            end = (1000, 600)
+            end = (1000, 900)
 
             print(int(fps))
-            cv2.line(img, (100, 0), (100, 720), (255, 0, 0), 1)
-            cv2.line(img, (1180, 0), (1180, 720), (255, 0, 0), 1)
+            cv2.line(img, (500, 0), (500, 1080), (255, 0, 0), 1)
+            cv2.line(img, (780, 0), (780, 1080), (255, 0, 0), 1)
 
-            # cv2.rectangle(img, start, end, (0, 0, 255), 1)
+            cv2.rectangle(img, start, end, (0, 0, 255), 1)
             cv2.putText(img, f'FPS: {str(int(fps))}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 1)
             cv2.imshow('cam', img)
             cv2.waitKey(1)
