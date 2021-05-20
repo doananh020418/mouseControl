@@ -16,9 +16,14 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 540)
 k = PyKeyboard()
 
 
-def click(x, y):
+def left_click(x, y):
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+
+
+def right_click(x, y):
+    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0)
+    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, x, y, 0, 0)
 
 
 def showCam(img, fps):
@@ -35,30 +40,30 @@ def showCam(img, fps):
 def pressArrowButton(X_left, Y_left, press):
     if X_left < 80 and press:
         k.tap_key(k.right_key)
-        #print('right')
+        # print('right')
         press = False
     if X_left > 880 and press:
         k.tap_key(k.left_key)
-        #print('left')
+        # print('left')
         press = False
     if Y_left < 80 and press:
         k.tap_key(k.down_key)
-        #print('down')
+        # print('down')
         press = False
     if Y_left > 460 and press:
         k.tap_key(k.up_key)
-        #print('up')
+        # print('up')
         press = False
     if (X_left > 80 and X_left < 880) and (Y_left > 80 and Y_left < 460):
         press = True
-        #print(press)
+        # print(press)
     return press
 
 
 def main():
     plocX, plocY = 0, 0
     clocX, clocY = 0, 0
-    smoothening = 5
+    smoothening = 7
     if cap.isOpened():
         ptime = 0
         press = True
@@ -66,7 +71,7 @@ def main():
             success, img = cap.read()
             if success:
                 img = cv2.flip(img, 1)
-                #print(img.shape)
+                # print(img.shape)
                 # caculate FPS
                 ctime = time.time()
                 fps = 1 / (ctime - ptime)
@@ -85,13 +90,16 @@ def main():
                     i, X_left, Y_left = pos[8]
                     i, X_mid, Y_mid = pos[6]
                     i, X_base, Y_base = pos[0]
+                    i, X_thumb, Y_thumb = pos[4]
+                    i, X_b, Y_b = pos[2]
 
                     # caculate distance between postiton
-                    # left_distance = math.hypot(X_left - X_base, Y_left - Y_base)
+                    thumb_distance = math.hypot(X_thumb - X_base, Y_thumb - Y_base)
+                    base_distance2 = math.hypot(X_b - X_base, Y_b - Y_base)
                     right_distance = math.hypot(X_right - X_base, Y_right - Y_base)
                     base_distance = math.hypot(X_mid - X_base, Y_mid - Y_base)
 
-                    press = pressArrowButton(X_left,Y_left, press)
+                    press = pressArrowButton(X_left, Y_left, press)
                     # normalization
                     if X_left > 880:
                         X_left = 880
@@ -106,24 +114,24 @@ def main():
                     Y_left = np.interp(Y_left, [0 + 100, 460], [0, sh])
                     X_left = np.interp(X_left, [0 + 100, 880], [0, sw])
 
+                    # smoothening movement
                     clocX = plocX + (X_left - plocX) / smoothening
                     clocY = plocY + (Y_left - plocY) / smoothening
 
                     # move cursor
-                    # X_cursor = int(np.floor(int(X_left) / 10) * 10)
-                    # Y_cursor = int(np.floor(int(Y_left) / 10) * 10)
+
                     X_cursor = int(clocX)
                     Y_cursor = int(clocY)
                     win32api.SetCursorPos((X_cursor, Y_cursor))
                     plocX, plocY = X_cursor, Y_cursor
                     # click condition
+                    #Fold middle finger to right click
                     if (right_distance < base_distance):
-                        click(int(X_cursor), int(Y_cursor))
-                    # print(f'R:{X_left, Y_left}')
-                    # print(f'L:{X_left, Y_left}')
-                    # print(sw, sh)
+                        right_click(int(X_cursor), int(Y_cursor))
+                    # Fold thumb to right click.
+                    if thumb_distance < base_distance2:
+                        left_click(int(X_cursor), int(Y_cursor))
 
-                #print(int(fps))
                 showCam(img, fps)
 
 
